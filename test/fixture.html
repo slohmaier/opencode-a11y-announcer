@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>opencode-a11y-announcer fixture</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; }
+    h1 { font-size: 18px; }
+    .panel { border: 1px solid currentColor; padding: 8px; margin: 8px 0; }
+    #chat { min-height: 60px; }
+    #log div { border-bottom: 1px solid #ccc; padding: 2px 0; }
+    button { font: inherit; margin: 2px; }
+    code { background: #eee; padding: 0 3px; }
+  </style>
+</head>
+<body>
+  <h1>opencode-a11y-announcer fixture</h1>
+  <p>Standalone DOM replica of the opencode chat slots. The userscript is loaded with stubbed <code>GM_*</code> APIs.
+     Announcements are mirrored from the hidden live regions into the log below.</p>
+
+  <div class="panel">
+    <button id="add-thinking">Add thinking row</button>
+    <button id="add-reasoning">Add reasoning part</button>
+    <button id="append-reasoning">Append reasoning text</button>
+    <button id="add-result">Add result text</button>
+    <button id="append-result">Append result text</button>
+    <button id="add-tool">Add tool call</button>
+    <button id="clear">Clear chat</button>
+  </div>
+
+  <div id="chat" data-slot="session-turn-assistant-content"></div>
+
+  <div class="panel">
+    <strong>Announcement log</strong>
+    <div id="log" aria-live="off"></div>
+  </div>
+
+  <script>
+    window.__a11yTestSettings = {
+      enabled: true,
+      hosts: [''],
+      announceToolArgs: true,
+      announceToolOutput: true,
+      announceCodeBlocks: false,
+      labelUnlabeledControls: true,
+      heartbeatMs: 1500,
+      debug: true
+    };
+    window.GM_getValue = function (key, dflt) {
+      if (key === 'opencode-a11y:settings') return JSON.stringify(window.__a11yTestSettings);
+      return dflt;
+    };
+    window.GM_setValue = function () {};
+    window.GM_registerMenuCommand = function () {};
+    window.GM_addStyle = function (css) {
+      var s = document.createElement('style');
+      s.textContent = css;
+      document.head.appendChild(s);
+    };
+  </script>
+
+  <script src="../opencode-a11y-announcer.user.js"></script>
+
+  <script>
+    var chat = document.getElementById('chat');
+    var log = document.getElementById('log');
+
+    function row(html) {
+      var d = document.createElement('div');
+      d.setAttribute('data-slot', 'session-turn-message-container');
+      d.innerHTML = html;
+      chat.appendChild(d);
+      return d;
+    }
+
+    document.getElementById('add-thinking').addEventListener('click', function () {
+      row('<div data-slot="session-turn-thinking">' +
+        '<span data-slot="text-shimmer-char"><span data-slot="text-shimmer-char-base" aria-hidden="true">' +
+        'Denkt nach</span><span data-slot="text-shimmer-char-shimmer" aria-hidden="true">Denkt nach</span></span>' +
+        '<span class="session-turn-thinking-heading">Reads the files</span></div>');
+    });
+
+    document.getElementById('add-reasoning').addEventListener('click', function () {
+      row('<div data-component="reasoning-part"><div></div></div>');
+    });
+
+    document.getElementById('append-reasoning').addEventListener('click', function () {
+      var part = chat.querySelector('[data-component="reasoning-part"]');
+      if (!part) return;
+      var target = part.firstElementChild || part;
+      target.textContent = target.textContent + ' Checking the config now.';
+    });
+
+    document.getElementById('add-result').addEventListener('click', function () {
+      row('<div data-component="text-part"><div data-slot="text-part-body">The fix is ready.</div></div>');
+    });
+
+    document.getElementById('append-result').addEventListener('click', function () {
+      var body = chat.querySelector('[data-slot="text-part-body"]');
+      if (!body) return;
+      body.textContent = body.textContent + ' Apply it now.';
+    });
+
+    document.getElementById('add-tool').addEventListener('click', function () {
+      row('<div data-component="tool-trigger">' +
+        '<span data-slot="basic-tool-tool-title">Read file</span>' +
+        '<span data-slot="basic-tool-tool-subtitle">/etc/hosts</span>' +
+        '<span data-slot="basic-tool-tool-arg">limit=50</span>' +
+        '<div data-component="tool-output" role="region" tabindex="0">127.0.0.1 localhost</div></div>');
+    });
+
+    document.getElementById('clear').addEventListener('click', function () {
+      chat.innerHTML = '';
+      log.innerHTML = '';
+    });
+
+    var known = { polite: '', assertive: '' };
+    function mirror() {
+      [['polite', 'polite'], ['assertive', 'assertive']].forEach(function (pair) {
+        var region = document.querySelector('.oc-a11y-region[aria-live="' + pair[1] + '"]');
+        if (!region) return;
+        var current = Array.prototype.map.call(region.children, function (c) { return c.textContent; }).join(' | ');
+        if (current && current !== known[pair[0]]) {
+          known[pair[0]] = current;
+          var item = document.createElement('div');
+          item.textContent = '[' + pair[0] + '] ' + current;
+          log.appendChild(item);
+          log.scrollTop = log.scrollHeight;
+        }
+      });
+    }
+    setInterval(mirror, 100);
+  </script>
+</body>
+</html>
