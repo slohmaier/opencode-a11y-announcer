@@ -20,5 +20,7 @@ Status: 2026-09-15
 
 ## Done
 
+- 2026-09-15 Published to https://github.com/slohmaier/opencode-a11y-announcer
+  (public, main), added @updateURL/@downloadURL for Tampermonkey auto-update.
 - 2026-09-15 Repo scaffolded, userscript implemented, fixture created,
   README and DOM notes written, syntax check passed.
