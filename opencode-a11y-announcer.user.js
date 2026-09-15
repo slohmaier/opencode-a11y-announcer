@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.1.0
+// @version      0.1.1
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -70,7 +70,14 @@
     toolSubtitle: '[data-slot="basic-tool-tool-subtitle"]',
     toolArg: '[data-slot="basic-tool-tool-arg"]',
     messageContainer: '[data-slot="session-turn-message-container"]',
-    assistantContent: '[data-slot="session-turn-assistant-content"]'
+    assistantContent: '[data-slot="session-turn-assistant-content"]',
+    userContent: '[data-slot="session-turn-message-content"]',
+    assistantTextBody: '[data-slot="session-turn-assistant-content"] [data-slot="text-part-body"]',
+    questionDock: '[data-component="session-question-dock"]',
+    questionText: '[data-slot="question-text"]',
+    questionOption: '[data-slot="question-option"]',
+    permissionDock: '[data-component="dock-prompt"][data-kind="permission"]',
+    permissionTitle: '[data-slot="permission-header-title"]'
   };
 
   function loadSettings() {
@@ -178,9 +185,13 @@
   var assertiveTimer = 0;
   var resultActive = false;
   var activeThinking = null;
+  var beatNonce = 0;
   var streamState = new WeakMap();
   var seenBlocks = new WeakSet();
   var announcedTools = new WeakSet();
+  var questionState = new WeakMap();
+  var permissionState = new WeakMap();
+  var ignoreFocusUntil = 0;
   var observer = null;
   var beatTimer = 0;
   var scanScheduled = false;
@@ -264,13 +275,17 @@
   function streamDelta(el, channel, opts) {
     if (!el) return;
     var full = readText(el, opts);
-    var rec = streamState.get(el) || { len: 0 };
-    if (full.length <= rec.len) {
-      streamState.set(el, { len: full.length });
+    var rec = streamState.get(el) || { len: 0, last: '' };
+    var delta = '';
+    if (full === rec.last) {
       return;
     }
-    var delta = full.slice(rec.len);
-    streamState.set(el, { len: full.length });
+    if (full.length > rec.len && full.slice(0, rec.len) === rec.last) {
+      delta = full.slice(rec.len);
+    } else if (rec.last && full.indexOf(rec.last) === -1 && rec.last.indexOf(full) === -1) {
+      delta = full;
+    }
+    streamState.set(el, { len: full.length, last: full });
     if (!delta.trim()) return;
     if (channel === 'result') {
       if (!resultActive) {
@@ -299,6 +314,44 @@
     if (!parts.length) parts.push(MSG.toolCall);
     if (!resultActive) bufferPolite(parts.join(', '));
     if (settings.debug) console.log('[oc-a11y] tool:', parts.join(', '));
+  }
+
+  function focusElement(target) {
+    if (!target) return;
+    if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '0');
+    if (document.activeElement === target) return;
+    try {
+      target.focus({ preventScroll: false });
+    } catch (e) {
+      try { target.focus(); } catch (e2) {}
+    }
+  }
+
+  function handleQuestion(dock) {
+    var sig = readText(dock, { includeCode: true });
+    var rec = questionState.get(dock);
+    if (rec && rec.sig === sig) return;
+    questionState.set(dock, { sig: sig });
+    if (!dock.hasAttribute('role')) dock.setAttribute('role', 'group');
+    if (!dock.hasAttribute('aria-label')) dock.setAttribute('aria-label', 'Question');
+    interruptPolite();
+    announceAssertive(sig || 'Question');
+    var target = dock.querySelector(SEL.questionText) || dock.querySelector(SEL.questionOption) || dock;
+    focusElement(target);
+    if (settings.debug) console.log('[oc-a11y] question:', sig);
+  }
+
+  function handlePermission(dock) {
+    var sig = readText(dock, { includeCode: true });
+    var rec = permissionState.get(dock);
+    if (rec && rec.sig === sig) return;
+    permissionState.set(dock, { sig: sig });
+    if (!dock.hasAttribute('role')) dock.setAttribute('role', 'group');
+    interruptPolite();
+    announceAssertive(sig || 'Permission required');
+    var target = dock.querySelector(SEL.permissionTitle) || dock.querySelector('button') || dock;
+    focusElement(target);
+    if (settings.debug) console.log('[oc-a11y] permission:', sig);
   }
 
   function accessibleName(el) {
@@ -346,6 +399,12 @@
     qsa(root, SEL.textPart).forEach(function (el) { markFocusable(el, 'group', MSG.message); });
     qsa(root, SEL.thinking).forEach(function (el) { markFocusable(el, 'status', null); });
     qsa(root, SEL.messageContainer).forEach(function (el) { markFocusable(el, 'article', null); });
+    qsa(root, SEL.questionDock).forEach(function (el) { markFocusable(el, 'group', 'Question'); });
+    qsa(root, SEL.questionText).forEach(function (el) { markFocusable(el, 'group', null); });
+    qsa(root, SEL.questionOption).forEach(function (el) {
+      if (el.tagName === 'BUTTON' && !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    });
+    qsa(root, SEL.permissionDock).forEach(function (el) { markFocusable(el, 'group', 'Permission required'); });
     qsa(root, SEL.toolOutput).forEach(function (el) {
       if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     });
@@ -361,6 +420,8 @@
     if (resultActive || hasPendingStream()) return;
     if (Date.now() - lastAnnounce < settings.heartbeatMs) return;
     var text = readText(activeThinking, { includeHidden: true, includeCode: true }) || MSG.thinking;
+    beatNonce = (beatNonce + 1) % 4;
+    if (beatNonce > 0) text += new Array(beatNonce + 1).join('\u200B');
     announcePolite(text);
   }
 
@@ -385,7 +446,7 @@
       streamDelta(el, 'polite', { includeHidden: true, includeCode: true });
     });
 
-    qsa(document, SEL.textBody).forEach(function (el) {
+    qsa(document, SEL.assistantTextBody).forEach(function (el) {
       if (!seenBlocks.has(el)) {
         seenBlocks.add(el);
         resultActive = true;
@@ -393,6 +454,9 @@
       }
       streamDelta(el, 'result', { includeCode: settings.announceCodeBlocks });
     });
+
+    qsa(document, SEL.questionDock).forEach(handleQuestion);
+    qsa(document, SEL.permissionDock).forEach(handlePermission);
 
     qsa(document, SEL.toolTrigger).forEach(function (el) { announceTool(el); });
 

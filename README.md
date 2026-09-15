@@ -23,6 +23,9 @@ Target version: opencode 1.18.31 (web UI, SolidJS).
 - Thinking heartbeat: while a thinking block is active and the announcer is idle,
   the thinking status is re-announced every 5 seconds (configurable).
 - Tool calls announce title, subtitle and optionally arguments and output.
+- Questions and permission prompts are announced assertively (question text,
+  options and hint) and the question text is made focusable and focused when the
+  prompt appears. The prompt is re-announced when the question changes.
 - Code blocks are announced as "Code block" by default; a setting reads the raw
   code instead.
 
@@ -61,6 +64,10 @@ Open the Tampermonkey menu and choose `opencode-a11y: Settings`.
   text.
 - Streamed reasoning and result text are batched over a short window (350 ms) to
   avoid per-token spam while staying streaming.
+- Only assistant text is treated as result text. User messages are not announced
+  and do not interrupt anything.
+- Questions and permission prompts go to the assertive region so they interrupt
+  reasoning or the thinking heartbeat.
 - The heartbeat only fires when no other announcement is pending and the last
   announcement is at least `heartbeatMs` old.
 - Announcements are capped at 1200 characters, then marked "(truncated)".

@@ -25,6 +25,8 @@
     <button id="add-result">Add result text</button>
     <button id="append-result">Append result text</button>
     <button id="add-tool">Add tool call</button>
+    <button id="add-question">Add question</button>
+    <button id="add-permission">Add permission prompt</button>
     <button id="clear">Clear chat</button>
   </div>
 
@@ -109,11 +111,34 @@
         '<div data-component="tool-output" role="region" tabindex="0">127.0.0.1 localhost</div></div>');
     });
 
+    document.getElementById('add-question').addEventListener('click', function () {
+      row('<div data-component="session-question-dock">' +
+        '<div data-slot="question-header-title">Question</div>' +
+        '<div data-slot="question-text">Which file should I edit?</div>' +
+        '<div data-slot="question-options">' +
+        '<button type="button" data-slot="question-option" role="radio" aria-checked="false">' +
+        '<span data-slot="question-option-main"><span data-slot="option-label">config.yml</span>' +
+        '<span data-slot="option-description">The main config</span></span></button>' +
+        '<button type="button" data-slot="question-option" role="radio" aria-checked="false">' +
+        '<span data-slot="question-option-main"><span data-slot="option-label">docker-compose.yml</span></span></button>' +
+        '</div>' +
+        '<div data-slot="question-hint">Use arrow keys to select</div></div>');
+    });
+
+    document.getElementById('add-permission').addEventListener('click', function () {
+      row('<div data-component="dock-prompt" data-kind="permission">' +
+        '<div data-slot="permission-row" data-variant="header">' +
+        '<div data-slot="permission-header-title">Permission required</div></div>' +
+        '<div data-slot="permission-row"><div data-slot="permission-hint">Run command: rm -rf build</div></div>' +
+        '<div data-slot="permission-footer-actions">' +
+        '<button type="button">Deny</button><button type="button">Allow once</button>' +
+        '<button type="button">Allow always</button></div></div>');
+    });
+
     document.getElementById('clear').addEventListener('click', function () {
       chat.innerHTML = '';
       log.innerHTML = '';
     });
-
     var known = { polite: '', assertive: '' };
     function mirror() {
       [['polite', 'polite'], ['assertive', 'assertive']].forEach(function (pair) {

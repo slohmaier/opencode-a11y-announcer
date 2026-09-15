@@ -20,6 +20,11 @@ Status: 2026-09-15
 
 ## Done
 
+- 2026-09-15 Fixed thinking heartbeat: user messages no longer set the result
+  state, so reasoning and the 5s heartbeat are no longer blocked. Result text is
+  now restricted to assistant content.
+- 2026-09-15 Added question and permission prompt handling: assertive
+  announcement of text and options, question text focusable and focused.
 - 2026-09-15 Published to https://github.com/slohmaier/opencode-a11y-announcer
   (public, main), added @updateURL/@downloadURL for Tampermonkey auto-update.
 - 2026-09-15 Repo scaffolded, userscript implemented, fixture created,

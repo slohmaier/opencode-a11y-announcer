@@ -63,6 +63,27 @@ change per release, the DOM attributes below are the stable hooks.
 - Locale chunks are dynamic imports, e.g. `de-DLNsfDjw.js`, `de-DPPrl5ZN.js`.
 - Toast live region exists in the bundle but is unrelated to chat.
 
+## Questions and permission prompts
+
+- Question dock: `[data-component="session-question-dock"]`
+  - header title `[data-slot="question-header-title"]`
+  - progress `[data-slot="question-progress"]`,
+    `[data-slot="question-progress-segment"]`
+  - question text `[data-slot="question-text"]`
+  - options `[data-slot="question-options"]`, each option a
+    `[data-slot="question-option"]` button with `role="radio"` or
+    `role="checkbox"` and `aria-checked`, containing `[data-slot="option-label"]`
+    and `[data-slot="option-description"]`. Custom answer:
+    `[data-slot="question-custom-input"]`.
+  - hint `[data-slot="question-hint"]`, footer `[data-slot="question-footer-actions"]`
+- Permission prompt: `[data-component="dock-prompt"][data-kind="permission"]`
+  - `[data-slot="permission-header-title"]`, `permission-hint`,
+    `permission-patterns`, `permission-footer-actions` (Deny / Allow once /
+    Allow always are real buttons with text).
+- Only assistant text parts count as result text: they live under
+  `[data-slot="session-turn-assistant-content"]`. User text parts live under
+  `[data-slot="session-turn-message-content"]` and are ignored.
+
 ## Not used
 
 - Do not rely on hashed asset filenames.
