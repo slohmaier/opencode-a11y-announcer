@@ -11,9 +11,11 @@ Target version: opencode 1.18.31 (web UI, SolidJS).
 - Accessibility labels for controls. Elements that already carry a localized
   `aria-label` from opencode keep it. Only controls without any accessible name
   receive a fallback label (English).
-- Keyboard reachability: tool calls, reasoning parts, assistant text parts,
-  thinking rows and message containers get `tabindex="0"` and a role if missing.
-  Focus gets a visible outline.
+- Keyboard reachability: tool calls, tool outputs, reasoning parts, assistant
+  text parts and thinking rows get `tabindex="0"`. Message containers are kept
+  out of the tab order (`role="article"`, `tabindex="-1"`) so tabbing does not
+  stop on a redundant wrapper that only says "article". Focus gets a visible
+  outline.
 - Ordered announcements through two hidden live regions:
   - polite region for tools, reasoning and the thinking heartbeat,
   - assertive region for assistant result text, which interrupts everything that

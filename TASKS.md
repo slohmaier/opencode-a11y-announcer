@@ -20,6 +20,10 @@ Status: 2026-09-15
 
 ## Done
 
+- 2026-09-15 Tab order cleaned up: message containers are no longer tab stops
+  (role article, tabindex -1); content parts are focusable without a role
+  prefix; thinking row no longer uses role status (avoided live-region
+  duplication).
 - 2026-09-15 Fixed thinking heartbeat: user messages no longer set the result
   state, so reasoning and the 5s heartbeat are no longer blocked. Result text is
   now restricted to assistant content.

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.1.1
+// @version      0.1.2
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -375,6 +375,19 @@
     el.classList.add('oc-a11y-focusable');
   }
 
+  function makeFocusable(el) {
+    if (!el || el.getAttribute('data-oc-a11y') === 'focusable') return;
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    el.setAttribute('data-oc-a11y', 'focusable');
+    el.classList.add('oc-a11y-focusable');
+  }
+
+  function markContainer(el) {
+    if (!el) return;
+    if (!el.hasAttribute('role')) el.setAttribute('role', 'article');
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+  }
+
   function labelButtons(root) {
     if (!settings.labelUnlabeledControls) return;
     qsa(root, 'button, [role="button"], [role="menuitem"]').forEach(function (btn) {
@@ -395,12 +408,12 @@
   function applyA11y(root) {
     if (!root.querySelectorAll) return;
     qsa(root, SEL.toolTrigger).forEach(function (el) { markFocusable(el, 'button', null); });
-    qsa(root, SEL.reasoning).forEach(function (el) { markFocusable(el, 'group', MSG.reasoning); });
-    qsa(root, SEL.textPart).forEach(function (el) { markFocusable(el, 'group', MSG.message); });
-    qsa(root, SEL.thinking).forEach(function (el) { markFocusable(el, 'status', null); });
-    qsa(root, SEL.messageContainer).forEach(function (el) { markFocusable(el, 'article', null); });
+    qsa(root, SEL.reasoning).forEach(makeFocusable);
+    qsa(root, SEL.textPart).forEach(makeFocusable);
+    qsa(root, SEL.thinking).forEach(makeFocusable);
+    qsa(root, SEL.messageContainer).forEach(markContainer);
     qsa(root, SEL.questionDock).forEach(function (el) { markFocusable(el, 'group', 'Question'); });
-    qsa(root, SEL.questionText).forEach(function (el) { markFocusable(el, 'group', null); });
+    qsa(root, SEL.questionText).forEach(makeFocusable);
     qsa(root, SEL.questionOption).forEach(function (el) {
       if (el.tagName === 'BUTTON' && !el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     });
