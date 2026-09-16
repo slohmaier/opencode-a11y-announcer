@@ -84,6 +84,19 @@ change per release, the DOM attributes below are the stable hooks.
   `[data-slot="session-turn-assistant-content"]`. User text parts live under
   `[data-slot="session-turn-message-content"]` and are ignored.
 
+## Desktop app (Electron)
+
+- The desktop renderer is not served over HTTP. It loads `oc://renderer/index.html`
+  from a custom privileged scheme; files come from `out/renderer` on disk
+  (inside `app.asar`). `location` is protocol `oc:`, hostname `renderer`, no port.
+- The renderer HTML has no CSP meta tag, only a `Document-Policy` response header,
+  so a same-origin `<script src="./oc-a11y.js">` tag works.
+- The API sidecar listens on `127.0.0.1` with a random port (or `OPENCODE_PORT`),
+  `cors: ["oc://renderer"]`. That is the API, not the page, so match patterns
+  cannot target the desktop UI.
+- Injection is done by `scripts/patch_desktop.sh` / `patch_desktop.ps1`, adding
+  the script under `out/renderer/` and a script tag in `out/renderer/index.html`.
+
 ## Not used
 
 - Do not rely on hashed asset filenames.

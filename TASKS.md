@@ -4,11 +4,16 @@ Status: 2026-09-15
 
 ## Open
 
-- Manual verification in the real opencode web UI (localhost:4096) with the
+- Manual verification in the real opencode web UI on localhost:4096 with the
   screen reader: ordering, read-once, heartbeat, result interrupt, focus order.
 - Verify selectors against a live session: thinking row, reasoning part, text
   part, tool trigger, tool output. Adjust if the DOM differs from the bundle
   analysis.
+- Test patch_desktop.sh on macOS and patch_desktop.ps1 on Windows: verify the
+  renderer loads oc-a11y.js, settings via localStorage, and re-patch after an
+  app update.
+- Check whether localStorage persists on the custom `oc://` origin; if not,
+  route desktop settings through the preload `window.api`/electron-store.
 - Decide whether tool output should be batched more aggressively (long bash
   output).
 - Consider a "stop announcements" keybind (panic key) to silence the queue.
@@ -20,6 +25,11 @@ Status: 2026-09-15
 
 ## Done
 
+- 2026-09-15 0.1.3: matching via port-specific @include (localhost/127.0.0.1
+  port 4096); removed the internal host allowlist and its settings field;
+  added injected mode (localStorage settings, Cmd/Ctrl+Alt+Shift+A shortcut,
+  window.ocA11y, body-ready guard); added scripts/patch_desktop.sh and
+  scripts/patch_desktop.ps1 plus the injected-mode fixture.
 - 2026-09-15 Tab order cleaned up: message containers are no longer tab stops
   (role article, tabindex -1); content parts are focusable without a role
   prefix; thinking row no longer uses role status (avoided live-region

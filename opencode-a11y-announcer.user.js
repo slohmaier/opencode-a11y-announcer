@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.1.2
+// @version      0.1.3
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
 // @supportURL   https://github.com/slohmaier/opencode-a11y-announcer/issues
 // @updateURL    https://raw.githubusercontent.com/slohmaier/opencode-a11y-announcer/main/opencode-a11y-announcer.user.js
 // @downloadURL  https://raw.githubusercontent.com/slohmaier/opencode-a11y-announcer/main/opencode-a11y-announcer.user.js
-// @match        http://localhost/*
-// @match        http://127.0.0.1/*
+// @include      http://localhost:4096/*
+// @include      http://127.0.0.1:4096/*
 // @run-at       document-idle
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -21,8 +21,9 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.1.0';
+  var VERSION = '0.1.3';
   var STORE_KEY = 'opencode-a11y:settings';
+  var HAS_GM = typeof GM_getValue === 'function' || typeof GM_setValue === 'function' || typeof GM_registerMenuCommand === 'function';
   var FLUSH_MS = 350;
   var BEAT_TICK_MS = 1000;
   var REGION_TTL_MS = 60000;
@@ -31,7 +32,6 @@
 
   var DEFAULTS = {
     enabled: true,
-    hosts: ['localhost', '127.0.0.1'],
     announceToolArgs: true,
     announceToolOutput: true,
     announceCodeBlocks: false,
@@ -80,13 +80,19 @@
     permissionTitle: '[data-slot="permission-header-title"]'
   };
 
-  function loadSettings() {
-    var raw;
+  function readRaw() {
     try {
-      raw = GM_getValue(STORE_KEY, null);
+      if (typeof GM_getValue === 'function') return GM_getValue(STORE_KEY, null);
+    } catch (e) {}
+    try {
+      return window.localStorage.getItem(STORE_KEY);
     } catch (e) {
-      raw = null;
+      return null;
     }
+  }
+
+  function loadSettings() {
+    var raw = readRaw();
     var s = {};
     Object.keys(DEFAULTS).forEach(function (k) {
       s[k] = DEFAULTS[k];
@@ -99,15 +105,20 @@
         });
       } catch (e) {}
     }
-    if (!Array.isArray(s.hosts) || !s.hosts.length) s.hosts = DEFAULTS.hosts.slice();
-    s.hosts = s.hosts.map(function (h) { return String(h).trim().toLowerCase(); }).filter(Boolean);
     s.heartbeatMs = Math.max(1000, parseInt(s.heartbeatMs, 10) || DEFAULTS.heartbeatMs);
     return s;
   }
 
   function saveSettings(next) {
+    var value = JSON.stringify(next);
     try {
-      GM_setValue(STORE_KEY, JSON.stringify(next));
+      if (typeof GM_setValue === 'function') {
+        GM_setValue(STORE_KEY, value);
+        return;
+      }
+    } catch (e) {}
+    try {
+      window.localStorage.setItem(STORE_KEY, value);
     } catch (e) {}
   }
 
@@ -542,13 +553,16 @@
     politeRegion = assertiveRegion = null;
   }
 
-  function hostAllowed() {
-    return settings.hosts.indexOf(String(location.hostname).toLowerCase()) !== -1;
-  }
-
   function startIfAllowed() {
-    if (settings.enabled && hostAllowed()) start();
-    else stop();
+    if (!settings.enabled) {
+      stop();
+      return;
+    }
+    if (!document.body) {
+      document.addEventListener('DOMContentLoaded', startIfAllowed, { once: true });
+      return;
+    }
+    start();
   }
 
   function el(tag, attrs, text) {
@@ -577,7 +591,7 @@
       dialog.appendChild(wrap);
     }
 
-    checkbox('enabled', 'Enable on allowed hosts');
+    checkbox('enabled', 'Enable announcements');
     checkbox('announceToolArgs', 'Announce tool arguments');
     checkbox('announceToolOutput', 'Announce tool output');
     checkbox('announceCodeBlocks', 'Read code blocks instead of "Code block"');
@@ -591,12 +605,6 @@
     hb.setAttribute('data-key', 'heartbeatMs');
     hbWrap.appendChild(hb);
     dialog.appendChild(hbWrap);
-
-    dialog.appendChild(el('label', { class: 'oc-a11y-row' }, 'Allowed hosts (one per line)'));
-    var hosts = el('textarea', { rows: '4', class: 'oc-a11y-textarea', 'aria-label': 'Allowed hosts, one per line' });
-    hosts.value = settings.hosts.join('\n');
-    hosts.setAttribute('data-key', 'hosts');
-    dialog.appendChild(hosts);
 
     var actions = el('div', { class: 'oc-a11y-actions' });
     var save = el('button', { type: 'button', class: 'oc-a11y-btn oc-a11y-primary' }, 'Save');
@@ -625,9 +633,7 @@
         var key = input.getAttribute('data-key');
         if (input.type === 'checkbox') next[key] = input.checked;
         else if (key === 'heartbeatMs') next.heartbeatMs = Math.max(1000, parseInt(input.value, 10) || DEFAULTS.heartbeatMs);
-        else if (key === 'hosts') next.hosts = input.value.split('\n').map(function (h) { return h.trim().toLowerCase(); }).filter(Boolean);
       });
-      if (!next.hosts.length) next.hosts = DEFAULTS.hosts.slice();
       saveSettings(next);
       settings = loadSettings();
       applyDebugClass();
@@ -656,7 +662,6 @@
     '.oc-a11y-h2{margin:0 0 12px;font-size:16px}' +
     '.oc-a11y-row{display:flex;gap:8px;align-items:center;margin:8px 0}' +
     '.oc-a11y-num{width:90px}' +
-    '.oc-a11y-textarea{width:100%;box-sizing:border-box;font:inherit}' +
     '.oc-a11y-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}' +
     '.oc-a11y-btn{padding:6px 14px;font:inherit;border:1px solid CanvasText;border-radius:6px;background:ButtonFace;' +
     'color:ButtonText;cursor:pointer}' +
@@ -664,19 +669,35 @@
     '@media (prefers-color-scheme: dark){.oc-a11y-dialog{background:#1e1e1e;color:#f2f2f2}}'
   );
 
-  try {
-    GM_registerMenuCommand('opencode-a11y: Settings', openSettings);
-    GM_registerMenuCommand('opencode-a11y: Toggle debug', function () {
-      settings.debug = !settings.debug;
-      saveSettings(settings);
-      applyDebugClass();
-    });
-  } catch (e) {}
+  function toggleDebug() {
+    settings.debug = !settings.debug;
+    saveSettings(settings);
+    applyDebugClass();
+  }
+
+  if (typeof GM_registerMenuCommand === 'function') {
+    try {
+      GM_registerMenuCommand('opencode-a11y: Settings', openSettings);
+      GM_registerMenuCommand('opencode-a11y: Toggle debug', toggleDebug);
+    } catch (e) {}
+  } else {
+    document.addEventListener('keydown', function (ev) {
+      if ((ev.ctrlKey || ev.metaKey) && ev.altKey && ev.shiftKey && (ev.key === 'A' || ev.key === 'a')) {
+        ev.preventDefault();
+        openSettings();
+      }
+    }, true);
+    try {
+      window.ocA11y = {
+        openSettings: openSettings,
+        toggleDebug: toggleDebug,
+        start: startIfAllowed,
+        stop: stop,
+        version: VERSION
+      };
+    } catch (e) {}
+  }
 
   applyDebugClass();
   startIfAllowed();
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startIfAllowed);
-  }
 })();

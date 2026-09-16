@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>opencode-a11y-announcer injected-mode fixture</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 16px; }
+    h1 { font-size: 18px; }
+    .panel { border: 1px solid currentColor; padding: 8px; margin: 8px 0; }
+    #chat { min-height: 60px; }
+    #log div { border-bottom: 1px solid #ccc; padding: 2px 0; }
+    button { font: inherit; margin: 2px; }
+    code { background: #eee; padding: 0 3px; }
+  </style>
+</head>
+<body>
+  <h1>opencode-a11y-announcer injected-mode fixture</h1>
+  <p>Loads the userscript with no <code>GM_*</code> APIs, so it runs in injected mode:
+     localStorage settings, keyboard shortcut for the settings dialog, and
+     <code>window.ocA11y</code>. This mirrors how <code>patch_desktop</code> injects
+     the script into the opencode desktop renderer.</p>
+
+  <div class="panel">
+    <button id="add-thinking">Add thinking row</button>
+    <button id="add-reasoning">Add reasoning part</button>
+    <button id="append-reasoning">Append reasoning text</button>
+    <button id="add-result">Add result text</button>
+    <button id="append-result">Append result text</button>
+    <button id="add-tool">Add tool call</button>
+    <button id="add-question">Add question</button>
+    <button id="open-settings">window.ocA11y.openSettings()</button>
+    <button id="clear">Clear chat</button>
+  </div>
+
+  <div id="chat" data-slot="session-turn-assistant-content"></div>
+
+  <div class="panel">
+    <strong>Announcement log</strong>
+    <div id="log" aria-live="off"></div>
+  </div>
+
+  <script src="../opencode-a11y-announcer.user.js"></script>
+
+  <script>
+    var chat = document.getElementById('chat');
+    var log = document.getElementById('log');
+
+    function row(html) {
+      var d = document.createElement('div');
+      d.setAttribute('data-slot', 'session-turn-message-container');
+      d.innerHTML = html;
+      chat.appendChild(d);
+      return d;
+    }
+
+    document.getElementById('add-thinking').addEventListener('click', function () {
+      row('<div data-slot="session-turn-thinking">' +
+        '<span data-slot="text-shimmer-char"><span data-slot="text-shimmer-char-base" aria-hidden="true">' +
+        'Thinking</span><span data-slot="text-shimmer-char-shimmer" aria-hidden="true">Thinking</span></span>' +
+        '<span class="session-turn-thinking-heading">Reads the files</span></div>');
+    });
+
+    document.getElementById('add-reasoning').addEventListener('click', function () {
+      row('<div data-component="reasoning-part"><div></div></div>');
+    });
+
+    document.getElementById('append-reasoning').addEventListener('click', function () {
+      var part = chat.querySelector('[data-component="reasoning-part"]');
+      if (!part) return;
+      var target = part.firstElementChild || part;
+      target.textContent = target.textContent + ' Checking the config now.';
+    });
+
+    document.getElementById('add-result').addEventListener('click', function () {
+      row('<div data-component="text-part"><div data-slot="text-part-body">The fix is ready.</div></div>');
+    });
+
+    document.getElementById('append-result').addEventListener('click', function () {
+      var body = chat.querySelector('[data-slot="text-part-body"]');
+      if (!body) return;
+      body.textContent = body.textContent + ' Apply it now.';
+    });
+
+    document.getElementById('add-tool').addEventListener('click', function () {
+      row('<div data-component="tool-trigger">' +
+        '<span data-slot="basic-tool-tool-title">Read file</span>' +
+        '<span data-slot="basic-tool-tool-subtitle">/etc/hosts</span>' +
+        '<span data-slot="basic-tool-tool-arg">limit=50</span>' +
+        '<div data-component="tool-output" role="region" tabindex="0">127.0.0.1 localhost</div></div>');
+    });
+
+    document.getElementById('add-question').addEventListener('click', function () {
+      row('<div data-component="session-question-dock">' +
+        '<div data-slot="question-header-title">Question</div>' +
+        '<div data-slot="question-text">Which file should I edit?</div>' +
+        '<div data-slot="question-options">' +
+        '<button type="button" data-slot="question-option" role="radio" aria-checked="false">' +
+        '<span data-slot="question-option-main"><span data-slot="option-label">config.yml</span>' +
+        '<span data-slot="option-description">The main config</span></span></button>' +
+        '</div>' +
+        '<div data-slot="question-hint">Use arrow keys to select</div></div>');
+    });
+
+    document.getElementById('open-settings').addEventListener('click', function () {
+      if (window.ocA11y) window.ocA11y.openSettings();
+      else log.appendChild(Object.assign(document.createElement('div'), { textContent: 'window.ocA11y not available' }));
+    });
+
+    document.getElementById('clear').addEventListener('click', function () {
+      chat.innerHTML = '';
+      log.innerHTML = '';
+    });
+
+    var known = { polite: '', assertive: '' };
+    function mirror() {
+      [['polite', 'polite'], ['assertive', 'assertive']].forEach(function (pair) {
+        var region = document.querySelector('.oc-a11y-region[aria-live="' + pair[1] + '"]');
+        if (!region) return;
+        var current = Array.prototype.map.call(region.children, function (c) { return c.textContent; }).join(' | ');
+        if (current && current !== known[pair[0]]) {
+          known[pair[0]] = current;
+          var item = document.createElement('div');
+          item.textContent = '[' + pair[0] + '] ' + current;
+          log.appendChild(item);
+          log.scrollTop = log.scrollHeight;
+        }
+      });
+    }
+    setInterval(mirror, 100);
+  </script>
+</body>
+</html>
