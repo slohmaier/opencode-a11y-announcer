@@ -90,15 +90,31 @@
     });
 
     document.getElementById('add-question').addEventListener('click', function () {
-      row('<div data-component="session-question-dock">' +
+      var wrap = row('<div data-component="session-question-dock">' +
         '<div data-slot="question-header-title">Question</div>' +
         '<div data-slot="question-text">Which file should I edit?</div>' +
         '<div data-slot="question-options">' +
         '<button type="button" data-slot="question-option" role="radio" aria-checked="false">' +
         '<span data-slot="question-option-main"><span data-slot="option-label">config.yml</span>' +
         '<span data-slot="option-description">The main config</span></span></button>' +
+        '<button type="button" data-slot="question-option" data-custom="true" role="radio" aria-checked="false">' +
+        '<span data-slot="question-option-main"><span data-slot="option-label">Custom answer</span>' +
+        '<span data-slot="option-description">Type your own</span></span></button>' +
         '</div>' +
         '<div data-slot="question-hint">Use arrow keys to select</div></div>');
+      var custom = wrap.querySelector('[data-slot="question-option"][data-custom="true"]');
+      function startEditing() {
+        // Mimic opencode: replace the option button with a form that holds a
+        // textarea. opencode focuses the textarea on mousedown only, so this
+        // deliberately does NOT focus it (keyboard activation case).
+        custom.outerHTML = '<form data-slot="question-option" data-custom="true">' +
+          '<span data-slot="question-option-main"><span data-slot="option-label">Custom answer</span>' +
+          '<textarea data-slot="question-custom-input" rows="1"></textarea></span></form>';
+      }
+      custom.addEventListener('click', startEditing);
+      custom.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') startEditing();
+      });
     });
 
     document.getElementById('open-settings').addEventListener('click', function () {

@@ -73,8 +73,13 @@ change per release, the DOM attributes below are the stable hooks.
   - options `[data-slot="question-options"]`, each option a
     `[data-slot="question-option"]` button with `role="radio"` or
     `role="checkbox"` and `aria-checked`, containing `[data-slot="option-label"]`
-    and `[data-slot="option-description"]`. Custom answer:
-    `[data-slot="question-custom-input"]`.
+    and `[data-slot="option-description"]`.
+  - Custom answer: a button `[data-slot="question-option"][data-custom="true"]`
+    (`role="radio"|"checkbox"`) that, when activated, is replaced by a
+    `<form data-slot="question-option" data-custom="true">` holding a
+    `<textarea data-slot="question-custom-input">`. opencode focuses the textarea
+    on `mousedown` only (its `$$mousedown` handler); keyboard activation does not
+    focus it, so the userscript focuses it (and labels it from the option label).
   - hint `[data-slot="question-hint"]`, footer `[data-slot="question-footer-actions"]`
 - Permission prompt: `[data-component="dock-prompt"][data-kind="permission"]`
   - `[data-slot="permission-header-title"]`, `permission-hint`,

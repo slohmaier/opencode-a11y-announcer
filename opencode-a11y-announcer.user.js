@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.1.3
+// @version      0.1.4
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.1.3';
+  var VERSION = '0.1.4';
   var STORE_KEY = 'opencode-a11y:settings';
   var HAS_GM = typeof GM_getValue === 'function' || typeof GM_setValue === 'function' || typeof GM_registerMenuCommand === 'function';
   var FLUSH_MS = 350;
@@ -46,7 +46,8 @@
     button: 'Button',
     reasoning: 'Reasoning',
     message: 'Message',
-    thinking: 'Thinking'
+    thinking: 'Thinking',
+    customAnswer: 'Custom answer'
   };
 
   var SLOT_LABELS = {
@@ -76,6 +77,9 @@
     questionDock: '[data-component="session-question-dock"]',
     questionText: '[data-slot="question-text"]',
     questionOption: '[data-slot="question-option"]',
+    customOption: '[data-slot="question-option"][data-custom="true"]',
+    customInput: '[data-slot="question-custom-input"]',
+    optionLabel: '[data-slot="option-label"]',
     permissionDock: '[data-component="dock-prompt"][data-kind="permission"]',
     permissionTitle: '[data-slot="permission-header-title"]'
   };
@@ -202,6 +206,7 @@
   var announcedTools = new WeakSet();
   var questionState = new WeakMap();
   var permissionState = new WeakMap();
+  var pendingCustomFocus = new WeakSet();
   var ignoreFocusUntil = 0;
   var observer = null;
   var beatTimer = 0;
@@ -338,6 +343,15 @@
     }
   }
 
+  function isVisible(el) {
+    if (!el) return false;
+    if (el.offsetWidth || el.offsetHeight || (el.getClientRects && el.getClientRects().length)) return true;
+    if (el.hasAttribute && (el.hasAttribute('hidden') || el.getAttribute('aria-hidden') === 'true')) return false;
+    var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    return true;
+  }
+
   function handleQuestion(dock) {
     var sig = readText(dock, { includeCode: true });
     var rec = questionState.get(dock);
@@ -347,9 +361,26 @@
     if (!dock.hasAttribute('aria-label')) dock.setAttribute('aria-label', 'Question');
     interruptPolite();
     announceAssertive(sig || 'Question');
-    var target = dock.querySelector(SEL.questionText) || dock.querySelector(SEL.questionOption) || dock;
-    focusElement(target);
+    var ae = document.activeElement;
+    var inCustom = !!(ae && dock.contains(ae) && ae.closest && ae.closest(SEL.customOption));
+    if (!inCustom) {
+      var target = dock.querySelector(SEL.questionText) || dock.querySelector(SEL.questionOption) || dock;
+      focusElement(target);
+    }
     if (settings.debug) console.log('[oc-a11y] question:', sig);
+  }
+
+  function focusPendingCustom(dock) {
+    if (!pendingCustomFocus.has(dock)) return;
+    var input = dock.querySelector(SEL.customInput);
+    if (!input || !isVisible(input)) return;
+    if (!input.hasAttribute('aria-label') && !input.hasAttribute('aria-labelledby')) {
+      var opt = dock.querySelector(SEL.customOption);
+      input.setAttribute('aria-label', (opt && textOf(opt, SEL.optionLabel)) || MSG.customAnswer);
+    }
+    focusElement(input);
+    pendingCustomFocus.delete(dock);
+    if (settings.debug) console.log('[oc-a11y] focus custom answer input');
   }
 
   function handlePermission(dock) {
@@ -480,6 +511,7 @@
     });
 
     qsa(document, SEL.questionDock).forEach(handleQuestion);
+    qsa(document, SEL.questionDock).forEach(focusPendingCustom);
     qsa(document, SEL.permissionDock).forEach(handlePermission);
 
     qsa(document, SEL.toolTrigger).forEach(function (el) { announceTool(el); });
@@ -697,6 +729,27 @@
       };
     } catch (e) {}
   }
+
+  // Custom answer: opencode focuses the textarea only on mousedown, so keyboard
+  // activation (Enter/Space) of the custom option never enters the field. Mark
+  // the dock and let scan() move focus once the textarea is rendered.
+  function isCustomOptionButton(node) {
+    if (!node || node.nodeType !== 1 || !node.closest) return null;
+    var el = node.closest(SEL.customOption);
+    return el && el.tagName === 'BUTTON' ? el : null;
+  }
+  function markCustomFocus(ev) {
+    var btn = isCustomOptionButton(ev.target);
+    if (!btn) return;
+    var dock = btn.closest(SEL.questionDock);
+    if (!dock) return;
+    pendingCustomFocus.add(dock);
+    scheduleScan();
+  }
+  document.addEventListener('click', markCustomFocus, true);
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') markCustomFocus(ev);
+  }, true);
 
   applyDebugClass();
   startIfAllowed();

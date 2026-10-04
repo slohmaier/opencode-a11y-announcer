@@ -25,6 +25,12 @@ Status: 2026-09-15
 
 ## Done
 
+- 2026-10-01 0.1.4: custom answer in the question dock now receives focus. When
+  the custom option (button `[data-slot="question-option"][data-custom="true"]`)
+  is activated by keyboard, the new `[data-slot="question-custom-input"]`
+  textarea is focused (opencode only focuses it on mousedown), and
+  `handleQuestion` no longer steals focus while the user is inside the custom
+  option. See docs/dom-notes.md.
 - 2026-09-15 0.1.3: matching via port-specific @include (localhost/127.0.0.1
   port 4096); removed the internal host allowlist and its settings field;
   added injected mode (localStorage settings, Cmd/Ctrl+Alt+Shift+A shortcut,

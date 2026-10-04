@@ -28,6 +28,9 @@ Target version: opencode 1.18.31 (web UI, SolidJS).
 - Questions and permission prompts are announced assertively (question text,
   options and hint) and the question text is made focusable and focused when the
   prompt appears. The prompt is re-announced when the question changes.
+- Custom answer: selecting the custom option (keyboard or mouse) focuses its
+  textarea, so the screen reader enters the field immediately. (opencode itself
+  focuses it on mousedown only, which keyboard activation misses.)
 - Code blocks are announced as "Code block" by default; a setting reads the raw
   code instead.
 
@@ -100,6 +103,17 @@ Notes:
   localStorage and the dialog opens with Cmd/Ctrl+Alt+Shift+A (also available as
   `window.ocA11y.openSettings()`). If localStorage is unavailable on the custom
   origin, settings fall back to in-memory defaults.
+
+## Deployment options
+
+The script is delivery-agnostic:
+
+- Tampermonkey: install the userscript and match the opencode web UI.
+- Injected: the same script can be served same-origin and added as a
+  `<script src="...">` tag by a reverse proxy, so no browser extension is
+  needed. It runs without `GM_*` APIs (localStorage settings, keyboard
+  shortcut, `window.ocA11y`).
+- Electron: the patch scripts inject the script into the desktop renderer.
 
 ## Announcement semantics
 
