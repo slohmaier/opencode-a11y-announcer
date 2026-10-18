@@ -120,7 +120,12 @@ The script is delivery-agnostic:
 - Injected: the same script can be served same-origin and added as a
   `<script src="...">` tag by a reverse proxy, so no browser extension is
   needed. It runs without `GM_*` APIs (localStorage settings, keyboard
-  shortcut, `window.ocA11y`).
+  shortcut, `window.ocA11y`). Reverse-proxy note: OpenCode 2 compresses the UI
+  HTML (gzip/brotli) when the browser advertises `Accept-Encoding`, which makes
+  body `sub_filter` injection silently fail (no `<script>` tag in the served
+  HTML). Strip the header toward the upstream so the injection runs and let the
+  proxy re-compress to the client, e.g. nginx
+  `proxy_set_header Accept-Encoding "";` in the proxy location.
 - Electron: the patch scripts inject the script into the desktop renderer.
 
 ## Announcement semantics

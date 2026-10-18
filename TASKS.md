@@ -19,6 +19,15 @@ Status: 2026-10-18
 
 ## Done
 
+- 2026-10-18 0.2.1: live v2 fixes. Added the v2 working/thinking status
+  (`[data-component="session-working"]` / `session-preparing`, text-shimmer
+  label "Working" / "Denkt nach") to the announced/heartbeat sources. Root
+  cause of "nothing announced" through nginx: OpenCode 2 brotli/gzip-compresses
+  the HTML for browsers, so `sub_filter` injection silently produced no script
+  tag; fixed with `proxy_set_header Accept-Encoding "";` on all five vhosts.
+  Verified end-to-end on tuxer (public URL): tool calls (Shell), results and the
+  working status are announced.
+
 - 2026-10-18 0.2.0: OpenCode 2 support. Selectors updated for the v2 web UI
   (`session-turn-thinking` -> `session-turn-thinking-row`; custom question input
   `question-custom-input` -> `text-input-v2-input`). The thinking row now wraps

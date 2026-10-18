@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.2.0
+// @version      0.2.1
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.2.0';
+  var VERSION = '0.2.1';
   var STORE_KEY = 'opencode-a11y:settings';
   var HAS_GM = typeof GM_getValue === 'function' || typeof GM_setValue === 'function' || typeof GM_registerMenuCommand === 'function';
   var FLUSH_MS = 350;
@@ -61,6 +61,7 @@
 
   var SEL = {
     thinking: '[data-slot="session-turn-thinking-row"], [data-slot="session-turn-thinking"]',
+    working: '[data-component="session-working"], [data-component="session-preparing"]',
     thinkingHeading: '.session-turn-thinking-heading',
     reasoning: '[data-component="reasoning-part"]',
     textPart: '[data-component="text-part"]',
@@ -153,6 +154,15 @@
     if (!el) return '';
     var node = sel ? el.querySelector(sel) : el;
     return node ? normalize(node.textContent) : '';
+  }
+
+  function workingLabel(el) {
+    if (!el) return '';
+    var t =
+      textOf(el, '[data-slot="text-shimmer-char-base"]') ||
+      textOf(el, SEL.toolTitle) ||
+      '';
+    return t || MSG.thinking;
   }
 
   function collectText(node, opts, out) {
@@ -481,7 +491,9 @@
     // OpenCode 2 nests the reasoning part inside the thinking row, so read only
     // the row's heading/title for the heartbeat (not the full reasoning text).
     var heading =
-      activeThinking.querySelector(SEL.thinkingHeading) || activeThinking.querySelector(SEL.toolTitle);
+      activeThinking.querySelector(SEL.thinkingHeading) ||
+      activeThinking.querySelector(SEL.toolTitle) ||
+      activeThinking.querySelector('[data-slot="text-shimmer-char-base"]');
     var text = heading
       ? readText(heading, { includeHidden: true, includeCode: true })
       : readText(activeThinking, { includeHidden: true, includeCode: true }) || MSG.thinking;
@@ -509,6 +521,18 @@
         resultActive = false;
       }
       activeThinking = el;
+    });
+
+    // OpenCode 2 shows the "working" status (Thinking / Denkt nach) as a
+    // session-working element with a text-shimmer label, not a thinking row.
+    qsa(document, SEL.working).forEach(function (el) {
+      activeThinking = el;
+      if (!seenBlocks.has(el)) {
+        seenBlocks.add(el);
+        resultActive = false;
+        var label = workingLabel(el);
+        if (label) bufferPolite(label);
+      }
     });
 
     qsa(document, SEL.assistantTextBody).forEach(function (el) {

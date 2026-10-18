@@ -10,10 +10,11 @@ the DOM attributes below are the stable hooks.
 
 The script supports both. OpenCode 2 kept most anchors; the changes are:
 
-- Thinking row: `[data-slot="session-turn-thinking"]` (v1) became
-  `[data-slot="session-turn-thinking-row"]` (v2). The script matches both. In
-  v2 the row wraps the reasoning part, so only the row's heading/title is read
-  for the heartbeat (not the full reasoning text).
+- Thinking / working status: the script announces
+  `[data-component="session-working"]` (and `session-preparing`) in v2, whose
+  text-shimmer label reads "Working" / "Denkt nach"; v1 used the thinking row.
+  `[data-slot="session-turn-thinking-row"]` (v2) / `[data-slot="session-turn-thinking"]`
+  (v1) wraps the reasoning part and is matched too.
 - Custom question input: `[data-slot="question-custom-input"]` (v1) was
   removed. In v2 the custom option is a `TextInput` with
   `[data-slot="text-input-v2-input"]` (inside
