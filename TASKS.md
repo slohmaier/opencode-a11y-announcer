@@ -1,29 +1,33 @@
 # TASKS
 
-Status: 2026-09-15
+Status: 2026-10-18
 
 ## Open
 
-- Manual verification in the real opencode web UI on localhost:4096 with the
-  screen reader: ordering, read-once, heartbeat, result interrupt, focus order.
-- Verify selectors against a live session: thinking row, reasoning part, text
-  part, tool trigger, tool output. Adjust if the DOM differs from the bundle
-  analysis.
-- Test patch_desktop.sh on macOS and patch_desktop.ps1 on Windows: verify the
-  renderer loads oc-a11y.js, settings via localStorage, and re-patch after an
-  app update.
-- Check whether localStorage persists on the custom `oc://` origin; if not,
-  route desktop settings through the preload `window.api`/electron-store.
-- Decide whether tool output should be batched more aggressively (long bash
-  output).
+- Live screen-reader verification in OpenCode 2 (2.0.32) on the pilot host
+  (tuxer): ordering, read-once, heartbeat, result interrupt, focus order,
+  question/permission docks. The fixture passes; real-DOM pass still pending.
+- Verify `patch_desktop.sh` on macOS and `patch_desktop.ps1` on Windows against
+  an OpenCode 2 desktop build (Linux .deb verified: injects oc-a11y.js and keeps
+  node-pty unpacked).
+- Decide whether the v2 virtualized timeline needs stronger de-duplication of
+  announcements when rows remount on scroll.
 - Consider a "stop announcements" keybind (panic key) to silence the queue.
 - Consider announcing errors (`tool-error-card-*`) and diffs explicitly.
-- Consider adding additional locales beyond EN/DE if opencode's own labels are
-  ever missing (currently not needed; only fallback labels are English).
 - Evaluate optional browser end-to-end test (Playwright) against a local
-  opencode instance with basic auth.
+  OpenCode 2 instance with basic auth.
 
 ## Done
+
+- 2026-10-18 0.2.0: OpenCode 2 support. Selectors updated for the v2 web UI
+  (`session-turn-thinking` -> `session-turn-thinking-row`; custom question input
+  `question-custom-input` -> `text-input-v2-input`). The thinking row now wraps
+  the reasoning part, so the heartbeat reads only the row heading/title to avoid
+  double-reading reasoning. Desktop patch scripts repack with `--unpack` so the
+  v2 node-pty native module (app.asar.unpacked) keeps loading; non-native
+  unpacked files still require `--force`. dom-notes and README retargeted to
+  2.0.32. Verified against the updated fixture with jsdom and against a real
+  OpenCode 2 desktop .deb (asar inject + unpack preserved).
 
 - 2026-10-01 0.1.4: custom answer in the question dock now receives focus. When
   the custom option (button `[data-slot="question-option"][data-custom="true"]`)

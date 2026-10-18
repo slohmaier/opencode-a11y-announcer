@@ -76,9 +76,12 @@
     }
 
     document.getElementById('add-thinking').addEventListener('click', function () {
-      row('<div data-slot="session-turn-thinking">' +
+      row('<div data-slot="session-turn-thinking-row">' +
+        '<div data-component="reasoning-part"><span data-slot="basic-tool-tool-title">' +
+        '<span data-component="text-shimmer" aria-label="Denkt nach">' +
         '<span data-slot="text-shimmer-char"><span data-slot="text-shimmer-char-base" aria-hidden="true">' +
         'Denkt nach</span><span data-slot="text-shimmer-char-shimmer" aria-hidden="true">Denkt nach</span></span>' +
+        '</span></span></div>' +
         '<span class="session-turn-thinking-heading">Reads the files</span></div>');
     });
 
@@ -121,7 +124,11 @@
         '<span data-slot="option-description">The main config</span></span></button>' +
         '<button type="button" data-slot="question-option" role="radio" aria-checked="false">' +
         '<span data-slot="question-option-main"><span data-slot="option-label">docker-compose.yml</span></span></button>' +
+        '<button type="button" data-slot="question-option" data-custom="true" role="radio" aria-checked="false">' +
+        '<span data-slot="question-option-main"><span data-slot="option-label">Custom answer</span></span></button>' +
         '</div>' +
+        '<form data-slot="question-option" data-custom="true">' +
+        '<textarea data-slot="text-input-v2-input" aria-label="Custom answer"></textarea></form>' +
         '<div data-slot="question-hint">Use arrow keys to select</div></div>');
     });
 

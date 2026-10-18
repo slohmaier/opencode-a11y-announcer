@@ -54,9 +54,12 @@
     }
 
     document.getElementById('add-thinking').addEventListener('click', function () {
-      row('<div data-slot="session-turn-thinking">' +
+      row('<div data-slot="session-turn-thinking-row">' +
+        '<div data-component="reasoning-part"><span data-slot="basic-tool-tool-title">' +
+        '<span data-component="text-shimmer" aria-label="Thinking">' +
         '<span data-slot="text-shimmer-char"><span data-slot="text-shimmer-char-base" aria-hidden="true">' +
         'Thinking</span><span data-slot="text-shimmer-char-shimmer" aria-hidden="true">Thinking</span></span>' +
+        '</span></span></div>' +
         '<span class="session-turn-thinking-heading">Reads the files</span></div>');
     });
 
@@ -109,7 +112,7 @@
         // deliberately does NOT focus it (keyboard activation case).
         custom.outerHTML = '<form data-slot="question-option" data-custom="true">' +
           '<span data-slot="question-option-main"><span data-slot="option-label">Custom answer</span>' +
-          '<textarea data-slot="question-custom-input" rows="1"></textarea></span></form>';
+          '<textarea data-slot="text-input-v2-input" rows="1"></textarea></span></form>';
       }
       custom.addEventListener('click', startEditing);
       custom.addEventListener('keydown', function (ev) {

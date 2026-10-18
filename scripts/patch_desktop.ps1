@@ -63,9 +63,17 @@ if (-not (Get-Command npx -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
-if ((Test-Path $Unpacked) -and (Get-ChildItem -Force $Unpacked | Select-Object -First 1) -and (-not $Force)) {
-  Write-Error "app.asar.unpacked is non-empty ($Unpacked). Repacking would break unpacked native modules. Re-run with -Force if you are sure."
-  exit 1
+# OpenCode 2 unpacks native modules (e.g. node-pty prebuilds) to
+# app.asar.unpacked. Those are preserved via --unpack below, so repacking is
+# safe as long as the unpacked tree holds only native binaries. Anything else
+# still needs -Force.
+if ((Test-Path $Unpacked) -and (-not $Force)) {
+  $native = '\.(node|dll|so|dylib)$'
+  $extra = Get-ChildItem -Recurse -File -Force $Unpacked | Where-Object { $_.Name -notmatch $native } | Select-Object -First 1
+  if ($extra) {
+    Write-Error "app.asar.unpacked contains non-native files (e.g. $($extra.FullName)). Repacking would break them. Re-run with -Force if you are sure."
+    exit 1
+  }
 }
 
 if (-not (Test-Path $Backup)) {
@@ -115,7 +123,7 @@ console.log("Injected script tag into out/renderer/index.html")
   if ($LASTEXITCODE -ne 0) { throw "index.html injection failed" }
 
   Write-Host "Repacking $ResolvedAsar"
-  & npx --yes @electron/asar pack $AppDir $ResolvedAsar
+  & npx --yes @electron/asar pack $AppDir $ResolvedAsar --unpack "{**/*.node,**/*.dll,**/*.so,**/*.dylib}"
   if ($LASTEXITCODE -ne 0) { throw "asar pack failed" }
 
   Write-Host "Done. Start the opencode desktop app."

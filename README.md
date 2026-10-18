@@ -4,7 +4,8 @@ Tampermonkey userscript that makes the opencode web UI usable with a screen
 reader: it labels controls, makes chat elements reachable by keyboard, and
 announces streamed activity in a controlled order.
 
-Target version: opencode 1.18.31 (web UI, SolidJS).
+Target version: opencode 2.0.32 (OpenCode 2 web UI, SolidJS). OpenCode 1
+(1.18.x/1.19.x) is still supported by the same build.
 
 ## Features
 
@@ -87,6 +88,13 @@ Both locate `app.asar` automatically (or take an override), back it up to
 tag to `out/renderer/index.html`, and repack. Use `--unpatch` / `-Unpatch` to
 restore the backup. On macOS the script also strips `ElectronAsarIntegrity` from
 `Info.plist` if present and ad-hoc signs the bundle (`--no-sign` to skip).
+
+OpenCode 2's desktop app unpacks native modules (node-pty prebuilds) to
+`app.asar.unpacked`. The repack preserves `*.node`, `*.dll`, `*.so` and
+`*.dylib` via `--unpack`, so the native modules keep loading. `app.asar.unpacked`
+that contains other (non-native) files is still refused unless `--force`/`-Force`
+is set. Re-run the patch after every opencode update; the installer overwrites
+`app.asar` and the native modules change per version.
 
 Examples:
 

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.1.4
+// @version      0.2.0
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.1.4';
+  var VERSION = '0.2.0';
   var STORE_KEY = 'opencode-a11y:settings';
   var HAS_GM = typeof GM_getValue === 'function' || typeof GM_setValue === 'function' || typeof GM_registerMenuCommand === 'function';
   var FLUSH_MS = 350;
@@ -60,7 +60,7 @@
   };
 
   var SEL = {
-    thinking: '[data-slot="session-turn-thinking"]',
+    thinking: '[data-slot="session-turn-thinking-row"], [data-slot="session-turn-thinking"]',
     thinkingHeading: '.session-turn-thinking-heading',
     reasoning: '[data-component="reasoning-part"]',
     textPart: '[data-component="text-part"]',
@@ -78,7 +78,11 @@
     questionText: '[data-slot="question-text"]',
     questionOption: '[data-slot="question-option"]',
     customOption: '[data-slot="question-option"][data-custom="true"]',
-    customInput: '[data-slot="question-custom-input"]',
+    customInput:
+      '[data-slot="question-option"][data-custom="true"] [data-slot="question-custom-input"],' +
+      '[data-slot="question-option"][data-custom="true"] [data-slot="text-input-v2-input"],' +
+      '[data-slot="question-option"][data-custom="true"] textarea,' +
+      '[data-slot="question-option"][data-custom="true"] input',
     optionLabel: '[data-slot="option-label"]',
     permissionDock: '[data-component="dock-prompt"][data-kind="permission"]',
     permissionTitle: '[data-slot="permission-header-title"]'
@@ -474,7 +478,14 @@
     if (!activeThinking || !document.contains(activeThinking)) return;
     if (resultActive || hasPendingStream()) return;
     if (Date.now() - lastAnnounce < settings.heartbeatMs) return;
-    var text = readText(activeThinking, { includeHidden: true, includeCode: true }) || MSG.thinking;
+    // OpenCode 2 nests the reasoning part inside the thinking row, so read only
+    // the row's heading/title for the heartbeat (not the full reasoning text).
+    var heading =
+      activeThinking.querySelector(SEL.thinkingHeading) || activeThinking.querySelector(SEL.toolTitle);
+    var text = heading
+      ? readText(heading, { includeHidden: true, includeCode: true })
+      : readText(activeThinking, { includeHidden: true, includeCode: true }) || MSG.thinking;
+    if (!text) text = MSG.thinking;
     beatNonce = (beatNonce + 1) % 4;
     if (beatNonce > 0) text += new Array(beatNonce + 1).join('\u200B');
     announcePolite(text);
@@ -498,7 +509,6 @@
         resultActive = false;
       }
       activeThinking = el;
-      streamDelta(el, 'polite', { includeHidden: true, includeCode: true });
     });
 
     qsa(document, SEL.assistantTextBody).forEach(function (el) {

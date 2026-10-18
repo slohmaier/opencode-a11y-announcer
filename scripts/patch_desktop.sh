@@ -110,10 +110,17 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 1
 fi
 
-if [ -d "$UNPACKED" ] && [ -n "$(ls -A "$UNPACKED" 2>/dev/null || true)" ] && [ "$FORCE" -eq 0 ]; then
-  echo "app.asar.unpacked is non-empty ($UNPACKED)." >&2
-  echo "Repacking would break unpacked native modules. Re-run with --force if you are sure." >&2
-  exit 1
+# OpenCode 2 unpacks native modules (e.g. node-pty prebuilds) to
+# app.asar.unpacked. Those are preserved via --unpack below, so repacking is
+# safe as long as the unpacked tree holds only native binaries. Anything else
+# still needs --force.
+if [ -d "$UNPACKED" ] && [ "$FORCE" -eq 0 ]; then
+  extra="$(find "$UNPACKED" -type f ! -name '*.node' ! -name '*.dll' ! -name '*.so' ! -name '*.dylib' ! -name '*.so.*' 2>/dev/null | head -n 1)"
+  if [ -n "$extra" ]; then
+    echo "app.asar.unpacked contains non-native files (e.g. $extra)." >&2
+    echo "Repacking would break them. Re-run with --force if you are sure." >&2
+    exit 1
+  fi
 fi
 
 if [ ! -f "$BACKUP" ]; then
@@ -159,7 +166,7 @@ console.log("Injected script tag into out/renderer/index.html")
 NODE
 
 echo "Repacking $ASAR"
-npx --yes @electron/asar pack "$TMP/app" "$ASAR"
+npx --yes @electron/asar pack "$TMP/app" "$ASAR" --unpack "{**/*.node,**/*.dll,**/*.so,**/*.dylib}"
 
 if [ "$(uname -s)" = "Darwin" ]; then
   BUNDLE="${ASAR%/Contents/Resources/app.asar}"

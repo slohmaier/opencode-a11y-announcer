@@ -1,8 +1,44 @@
 # DOM notes
 
-Pinned to opencode web UI 1.18.31. Selectors are read from the served bundles
-(`/assets/index-*.js`) and CSS. The UI is a SolidJS SPA; hashed asset names
-change per release, the DOM attributes below are the stable hooks.
+Pinned to opencode web UI 2.0.32 (OpenCode 2, SolidJS). Selectors are read
+from the served bundles and from the source at
+`github.com/anomalyco/opencode` (branch `dev`, packages/session-ui,
+packages/app). The UI is a SolidJS SPA; hashed asset names change per release,
+the DOM attributes below are the stable hooks.
+
+## OpenCode 1 vs 2
+
+The script supports both. OpenCode 2 kept most anchors; the changes are:
+
+- Thinking row: `[data-slot="session-turn-thinking"]` (v1) became
+  `[data-slot="session-turn-thinking-row"]` (v2). The script matches both. In
+  v2 the row wraps the reasoning part, so only the row's heading/title is read
+  for the heartbeat (not the full reasoning text).
+- Custom question input: `[data-slot="question-custom-input"]` (v1) was
+  removed. In v2 the custom option is a `TextInput` with
+  `[data-slot="text-input-v2-input"]` (inside
+  `[data-slot="question-option"][data-custom="true"]`). The script accepts
+  several fallbacks.
+- New wrappers in v2: `[data-component="session-timeline"]` around rows and
+  `[data-component="session-composer-dock"]` around the docks. Both are
+  transparent for the annotations.
+- The v2 timeline is virtualized; rows remount while scrolling, so annotation
+  is re-applied by the MutationObserver and element-keyed state may reset.
+- Everything else below is unchanged between v1 and v2.
+
+Selectors the script relies on (v2): `[data-slot="session-turn-thinking-row"]`,
+`[data-component="reasoning-part"]`, `[data-component="text-part"]`,
+`[data-slot="text-part-body"]`, `[data-component="tool-trigger"]`,
+`[data-slot="basic-tool-tool-title"] / -subtitle / -arg`,
+`[data-component="tool-output"]`, `[data-slot="basic-tool-tool-arg"]`,
+`[data-slot="session-turn-message-container"]`,
+`[data-slot="session-turn-assistant-content"]`,
+`[data-slot="session-turn-message-content"]`,
+`[data-component="session-question-dock"]`, `[data-slot="question-text"]`,
+`[data-slot="question-option"]` (incl. `data-custom="true"`),
+`[data-slot="option-label"]`,
+`[data-component="dock-prompt"][data-kind="permission"]`,
+`[data-slot="permission-header-title"]`.
 
 ## Chat structure
 
@@ -27,14 +63,15 @@ change per release, the DOM attributes below are the stable hooks.
 
 ## Thinking status row
 
-- Root: `[data-slot="session-turn-thinking"]`
+- Root: `[data-slot="session-turn-thinking-row"]` (v2) / `[data-slot="session-turn-thinking"]` (v1).
 - Heading: `.session-turn-thinking-heading` (only when reasoning summaries are
   hidden).
 - Status label uses the text-shimmer widget:
   `[data-slot="text-shimmer-char"]` containing
   `[data-slot="text-shimmer-char-base"]` and
   `[data-slot="text-shimmer-char-shimmer"]`, both `aria-hidden="true"`.
-  Read only the base node; the shimmer node duplicates it.
+  Read only the base node; the shimmer node duplicates it. In v2 the widget
+  wrapper `[data-component="text-shimmer"]` also carries an `aria-label`.
 - i18n keys: `ui.sessionTurn.status.thinking` ->
   EN "Thinking", DE "Denkt nach";
   `ui.sessionTurn.status.thinkingWithTopic` -> EN "Thinking - {{topic}}",
@@ -76,10 +113,12 @@ change per release, the DOM attributes below are the stable hooks.
     and `[data-slot="option-description"]`.
   - Custom answer: a button `[data-slot="question-option"][data-custom="true"]`
     (`role="radio"|"checkbox"`) that, when activated, is replaced by a
-    `<form data-slot="question-option" data-custom="true">` holding a
-    `<textarea data-slot="question-custom-input">`. opencode focuses the textarea
-    on `mousedown` only (its `$$mousedown` handler); keyboard activation does not
-    focus it, so the userscript focuses it (and labels it from the option label).
+    `[data-slot="question-option"][data-custom="true"]` form holding a v2
+    `TextInput` (`[data-component="text-input-v2"]` with
+    `[data-slot="text-input-v2-input"]`; v1 used a bare
+    `<textarea data-slot="question-custom-input">`). opencode focuses the field
+    on `mousedown` only, so keyboard activation does not focus it; the
+    userscript focuses it (and labels it from the option label).
   - hint `[data-slot="question-hint"]`, footer `[data-slot="question-footer-actions"]`
 - Permission prompt: `[data-component="dock-prompt"][data-kind="permission"]`
   - `[data-slot="permission-header-title"]`, `permission-hint`,
