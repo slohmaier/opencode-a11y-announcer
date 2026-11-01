@@ -90,11 +90,15 @@ restore the backup. On macOS the script also strips `ElectronAsarIntegrity` from
 `Info.plist` if present and ad-hoc signs the bundle (`--no-sign` to skip).
 
 OpenCode 2's desktop app unpacks native modules (node-pty prebuilds) to
-`app.asar.unpacked`. The repack preserves `*.node`, `*.dll`, `*.so` and
-`*.dylib` via `--unpack`, so the native modules keep loading. `app.asar.unpacked`
-that contains other (non-native) files is still refused unless `--force`/`-Force`
-is set. Re-run the patch after every opencode update; the installer overwrites
-`app.asar` and the native modules change per version.
+`app.asar.unpacked`, and that tree also holds package JSON, JS and helper
+binaries such as `OpenConsole.exe`. Instead of guessing patterns, the scripts
+read the unpacked layout from the original `app.asar` header and pass the
+resulting relative directories, comma-separated, to `asar pack --unpack-dir`, so
+the unpacked tree is reproduced exactly. Braces or brace expansion are not valid
+there and silently match nothing. After repacking the scripts re-list both
+archives and restore the backup if the unpacked entry count changed. Re-run the
+patch after every opencode update; the installer overwrites `app.asar` and the
+native modules change per version.
 
 Examples:
 
@@ -105,8 +109,9 @@ Notes:
 
 - Quit the app before patching. Re-run after every opencode update, because the
   installer overwrites `app.asar`.
-- The scripts refuse to repack when `app.asar.unpacked` is non-empty, because
-  that would break unpacked native modules (`--force` to override).
+- The scripts reproduce the unpacked tree of the original archive. They only
+  refuse when `app.asar.unpacked` is non-empty and no unpack patterns could be
+  derived (`--force` to pack everything into the asar).
 - Injected mode has no `GM_*` and no Tampermonkey menu: settings are stored in
   localStorage and the dialog opens with Cmd/Ctrl+Alt+Shift+A (also available as
   `window.ocA11y.openSettings()`). If localStorage is unavailable on the custom

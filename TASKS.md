@@ -1,6 +1,6 @@
 # TASKS
 
-Status: 2026-10-18
+Status: 2026-11-01
 
 ## Open
 
@@ -19,6 +19,19 @@ Status: 2026-10-18
 
 ## Done
 
+- 2026-11-01 patch_desktop.ps1/.sh, Windows/OpenCode 2.2.5: the bundled app sits
+  in `%LOCALAPPDATA%\Programs\@opencode-aidesktop`, which auto-detection did not
+  know, so the patch aborted with "Could not find app.asar". Detection now also
+  covers that folder and falls back to an `*opencode*` scan under
+  `%LOCALAPPDATA%\Programs`. The unpack handling from 0.2.0 guessed a
+  `*.node/*.dll/*.so/*.dylib` glob, which does not reproduce the archive: the
+  real unpacked tree also holds JS, package JSON and `OpenConsole.exe`, so the
+  non-native guard refused outright on Windows. The scripts now derive the
+  unpacked directories from the original asar header and pass them
+  comma-separated to `--unpack-dir`; braces there match nothing and dropped the
+  whole unpacked tree (caught by the new post-pack count check, which restored
+  the backup). Verified on a copy of the 2.2.5 asar: script tag injected into
+  `out/renderer/index.html`, `oc-a11y.js` present, unpacked entries 25 -> 25.
 - 2026-10-18 0.2.1: live v2 fixes. Added the v2 working/thinking status
   (`[data-component="session-working"]` / `session-preparing`, text-shimmer
   label "Working" / "Denkt nach") to the announced/heartbeat sources. Root

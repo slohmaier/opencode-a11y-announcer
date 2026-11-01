@@ -76,6 +76,51 @@ detect_asar() {
 
 ASAR="$(detect_asar)"
 
+derive_unpack_glob() {
+  node - "$1" <<'NODE'
+const fs = require("fs")
+const p = process.argv[2]
+const fd = fs.openSync(p, "r")
+const head = Buffer.alloc(16)
+fs.readSync(fd, head, 0, 16, 0)
+const size = head.readUInt32LE(12)
+const hb = Buffer.alloc(size)
+fs.readSync(fd, hb, 0, size, 16)
+const root = JSON.parse(hb.toString("utf8"))
+const dirs = []
+function walkDirs(node, prefix) {
+  for (const k of Object.keys(node.files || {})) {
+    const child = node.files[k]
+    const q = prefix + "/" + k
+    if (child.files) {
+      if (child.unpacked) dirs.push(q.replace(/^\//, ""))
+      walkDirs(child, q)
+    }
+  }
+}
+walkDirs(root, "")
+const top = dirs.filter(d => !dirs.some(o => o !== d && d.startsWith(o + "/")))
+if (top.length) {
+  console.log(top.join(","))
+  process.exit(0)
+}
+const parents = new Set()
+function walkFiles(node, prefix) {
+  for (const k of Object.keys(node.files || {})) {
+    const child = node.files[k]
+    const q = prefix + "/" + k
+    if (child.files) walkFiles(child, q)
+    else if (child.unpacked) {
+      const dir = q.replace(/^\//, "").split("/").slice(0, -1).join("/")
+      if (dir) parents.add(dir)
+    }
+  }
+}
+walkFiles(root, "")
+console.log(parents.size ? [...parents].join(",") : "")
+NODE
+}
+
 if [ -z "$ASAR" ]; then
   echo "Could not find app.asar. Pass --asar PATH or --app PATH." >&2
   exit 1
@@ -110,22 +155,26 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 1
 fi
 
-# OpenCode 2 unpacks native modules (e.g. node-pty prebuilds) to
-# app.asar.unpacked. Those are preserved via --unpack below, so repacking is
-# safe as long as the unpacked tree holds only native binaries. Anything else
-# still needs --force.
-if [ -d "$UNPACKED" ] && [ "$FORCE" -eq 0 ]; then
-  extra="$(find "$UNPACKED" -type f ! -name '*.node' ! -name '*.dll' ! -name '*.so' ! -name '*.dylib' ! -name '*.so.*' 2>/dev/null | head -n 1)"
-  if [ -n "$extra" ]; then
-    echo "app.asar.unpacked contains non-native files (e.g. $extra)." >&2
-    echo "Repacking would break them. Re-run with --force if you are sure." >&2
-    exit 1
-  fi
+UNPACKED_NONEMPTY=0
+if [ -d "$UNPACKED" ] && [ -n "$(ls -A "$UNPACKED" 2>/dev/null || true)" ]; then
+  UNPACKED_NONEMPTY=1
 fi
 
 if [ ! -f "$BACKUP" ]; then
   cp "$ASAR" "$BACKUP"
   echo "Backup created: $BACKUP"
+fi
+
+UNPACK_GLOB="$(derive_unpack_glob "$BACKUP")"
+if [ "$UNPACKED_NONEMPTY" -eq 1 ] && [ -z "$UNPACK_GLOB" ]; then
+  if [ "$FORCE" -eq 0 ]; then
+    echo "app.asar.unpacked is non-empty but no unpack patterns could be derived; refusing to repack." >&2
+    echo "Re-run with --force to pack everything into the asar." >&2
+    exit 1
+  fi
+  echo "app.asar.unpacked is non-empty and no unpack patterns were derived; native modules will be packed into the asar (--force)." >&2
+elif [ -n "$UNPACK_GLOB" ]; then
+  echo "Preserving unpacked native modules: $UNPACK_GLOB"
 fi
 
 TMP="$(mktemp -d)"
@@ -166,7 +215,20 @@ console.log("Injected script tag into out/renderer/index.html")
 NODE
 
 echo "Repacking $ASAR"
-npx --yes @electron/asar pack "$TMP/app" "$ASAR" --unpack "{**/*.node,**/*.dll,**/*.so,**/*.dylib}"
+if [ -n "$UNPACK_GLOB" ]; then
+  npx --yes @electron/asar pack "$TMP/app" "$ASAR" --unpack-dir "$UNPACK_GLOB"
+else
+  npx --yes @electron/asar pack "$TMP/app" "$ASAR"
+fi
+
+BEFORE="$(npx --yes @electron/asar list --is-pack "$BACKUP" | grep -c '^unpack' || true)"
+AFTER="$(npx --yes @electron/asar list --is-pack "$ASAR" | grep -c '^unpack' || true)"
+if [ "$BEFORE" != "$AFTER" ]; then
+  echo "Unpacked entry count changed ($BEFORE -> $AFTER); restoring backup." >&2
+  cp "$BACKUP" "$ASAR"
+  exit 1
+fi
+echo "Unpacked entries preserved: $AFTER"
 
 if [ "$(uname -s)" = "Darwin" ]; then
   BUNDLE="${ASAR%/Contents/Resources/app.asar}"
