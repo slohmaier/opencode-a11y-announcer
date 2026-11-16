@@ -4,7 +4,7 @@ Tampermonkey userscript that makes the opencode web UI usable with a screen
 reader: it labels controls, makes chat elements reachable by keyboard, and
 announces streamed activity in a controlled order.
 
-Target version: opencode 2.0.32 (OpenCode 2 web UI, SolidJS). OpenCode 1
+Target version: opencode 2.3.0 (OpenCode 2 web UI, SolidJS). OpenCode 1
 (1.18.x/1.19.x) is still supported by the same build.
 
 ## Features
@@ -26,6 +26,8 @@ Target version: opencode 2.0.32 (OpenCode 2 web UI, SolidJS). OpenCode 1
 - Thinking heartbeat: while a thinking block is active and the announcer is idle,
   the thinking status is re-announced every 5 seconds (configurable).
 - Tool calls announce title, subtitle and optionally arguments and output.
+  Shell output is read from OpenCode 2.3's dedicated `bash-output` component as
+  well as from the older `tool-output` region.
 - Questions and permission prompts are announced assertively (question text,
   options and hint) and the question text is made focusable and focused when the
   prompt appears. The prompt is re-announced when the question changes.

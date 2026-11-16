@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         opencode a11y announcer
 // @namespace    https://github.com/slohmaier/opencode-a11y-announcer
-// @version      0.2.1
+// @version      0.2.2
 // @description  Accessibility labels and ordered screen-reader announcements for the opencode web UI
 // @author       Stefan
 // @homepageURL  https://github.com/slohmaier/opencode-a11y-announcer
@@ -21,7 +21,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '0.2.1';
+  var VERSION = '0.2.2';
   var STORE_KEY = 'opencode-a11y:settings';
   var HAS_GM = typeof GM_getValue === 'function' || typeof GM_setValue === 'function' || typeof GM_registerMenuCommand === 'function';
   var FLUSH_MS = 350;
@@ -67,7 +67,7 @@
     textPart: '[data-component="text-part"]',
     textBody: '[data-slot="text-part-body"]',
     toolTrigger: '[data-component="tool-trigger"]',
-    toolOutput: '[data-component="tool-output"]',
+    toolOutput: '[data-component="tool-output"], [data-component="bash-output"]',
     toolTitle: '[data-slot="basic-tool-tool-title"]',
     toolSubtitle: '[data-slot="basic-tool-tool-subtitle"]',
     toolArg: '[data-slot="basic-tool-tool-arg"]',
@@ -475,6 +475,7 @@
     });
     qsa(root, SEL.permissionDock).forEach(function (el) { markFocusable(el, 'group', 'Permission required'); });
     qsa(root, SEL.toolOutput).forEach(function (el) {
+      if (el.querySelector('[data-slot="bash-scroll"][tabindex]')) return;
       if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
     });
     labelButtons(root);

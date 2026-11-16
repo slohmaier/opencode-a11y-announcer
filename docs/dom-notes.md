@@ -1,10 +1,18 @@
 # DOM notes
 
-Pinned to opencode web UI 2.0.32 (OpenCode 2, SolidJS). Selectors are read
+Pinned to opencode web UI 2.3.0 (OpenCode 2, SolidJS). Selectors are read
 from the served bundles and from the source at
 `github.com/anomalyco/opencode` (branch `dev`, packages/session-ui,
 packages/app). The UI is a SolidJS SPA; hashed asset names change per release,
 the DOM attributes below are the stable hooks.
+
+Verified against 2.3.0 (2026-11-13): every anchor used by the script still
+exists. New in 2.3.0 are `[data-component="bash-output"]` (shell output, see
+"Tool calls"), `checkbox-v2-*`, `diagram-preview-*`, `session-todo-list`,
+`context-tool-group-*`, `timeline-event-failed`, `tool-error-card-failed`,
+`session-free-limit` and `bash-*` slots. Removed in 2.3.0 (unused by the
+script): `attachment-card-icon`, `menu-scroll-viewport`, `menu-v2-item`,
+`tooltip-v2-trigger`, `composer-editor`.
 
 ## OpenCode 1 vs 2
 
@@ -85,8 +93,16 @@ Selectors the script relies on (v2): `[data-slot="session-turn-thinking-row"]`,
 - Subtitle: `[data-slot="basic-tool-tool-subtitle"]`
 - Argument: `[data-slot="basic-tool-tool-arg"]`
 - Output: `[data-component="tool-output"]` (already `role="region" tabindex="0"`)
-- Bash output: `[data-component="bash-output"]`,
-  `[data-slot="bash-pre"]`, `[data-slot="bash-scroll"]`
+- Bash output (since 2.3.0): `[data-component="bash-output"]` with
+  `data-variant="shell"`, inner `[data-slot="bash-scroll"]` (already
+  `role="region" tabindex="0"`), `[data-slot="bash-command"]`,
+  `[data-slot="bash-result"]`, `[data-slot="bash-pre"]`,
+  `[data-slot="bash-outcome"]` (e.g. "Command exited with code 0"),
+  `[data-slot="bash-toggle"]`. Shell output no longer renders inside
+  `tool-output`; the wrapper chain is `[data-component="shell-tool"]` >
+  `[data-component="session-shell-message"]` > `bash-output`. The command
+  itself is text-reveal content in the trigger, not a
+  `basic-tool-tool-subtitle`.
 - Edit/write: `[data-component="edit-tool"]`, `write-tool`,
   `[data-slot="message-part-title-text"]`, `message-part-title-filename`
 - Errors: `[data-slot="tool-error-card-copy"]`, `tool-error-card-content`

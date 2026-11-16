@@ -1,12 +1,12 @@
 # TASKS
 
-Status: 2026-11-01
+Status: 2026-11-16
 
 ## Open
 
-- Live screen-reader verification in OpenCode 2 (2.0.32) on the pilot host
-  (tuxer): ordering, read-once, heartbeat, result interrupt, focus order,
-  question/permission docks. The fixture passes; real-DOM pass still pending.
+- Live screen-reader verification in OpenCode 2 (2.3.0): ordering, read-once,
+  heartbeat, result interrupt, focus order, question/permission docks and the
+  new `bash-output` shell rows. The fixture passes; real-DOM pass still pending.
 - Verify `patch_desktop.sh` on macOS and `patch_desktop.ps1` on Windows against
   an OpenCode 2 desktop build (Linux .deb verified: injects oc-a11y.js and keeps
   node-pty unpacked).
@@ -18,6 +18,17 @@ Status: 2026-11-01
   OpenCode 2 instance with basic auth.
 
 ## Done
+
+- 2026-11-16 0.2.2: OpenCode 2.3.0 support. 2.3.0 renders shell output in a
+  dedicated `[data-component="bash-output"]` component (`shell-tool` >
+  `session-shell-message` > `bash-output`, slots `bash-command`, `bash-result`,
+  `bash-pre`, `bash-outcome`), so shell output no longer matched
+  `[data-component="tool-output"]` and stopped being announced. `SEL.toolOutput`
+  now matches both; `applyA11y` skips the outer `bash-output` when its inner
+  `[data-slot="bash-scroll"]` is already a tab stop. Probe of the 2.3.0 bundles:
+  all other anchors unchanged; removed `attachment-card-icon`,
+  `menu-scroll-viewport`, `menu-v2-item`, `tooltip-v2-trigger`,
+  `composer-editor` are unused by the script. Fixtures gained a v2.3+ shell row.
 
 - 2026-11-01 patch_desktop.ps1/.sh, Windows/OpenCode 2.2.5: the bundled app sits
   in `%LOCALAPPDATA%\Programs\@opencode-aidesktop`, which auto-detection did not

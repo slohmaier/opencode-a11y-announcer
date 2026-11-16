@@ -27,6 +27,7 @@
     <button id="add-result">Add result text</button>
     <button id="append-result">Append result text</button>
     <button id="add-tool">Add tool call</button>
+    <button id="add-shell">Add shell call (v2.3+)</button>
     <button id="add-question">Add question</button>
     <button id="open-settings">window.ocA11y.openSettings()</button>
     <button id="clear">Clear chat</button>
@@ -90,6 +91,18 @@
         '<span data-slot="basic-tool-tool-subtitle">/etc/hosts</span>' +
         '<span data-slot="basic-tool-tool-arg">limit=50</span>' +
         '<div data-component="tool-output" role="region" tabindex="0">127.0.0.1 localhost</div></div>');
+    });
+
+    document.getElementById('add-shell').addEventListener('click', function () {
+      row('<div data-component="tool-trigger">' +
+        '<span data-slot="basic-tool-tool-title">Shell</span></div>' +
+        '<div data-component="shell-tool"><div data-component="session-shell-message">' +
+        '<div data-component="bash-output" data-variant="shell" dir="ltr">' +
+        '<div data-slot="bash-command"><pre data-slot="bash-pre"><code>systemctl is-active nginx</code></pre></div>' +
+        '<div data-slot="bash-scroll" data-scrollable tabindex="0" role="region">' +
+        '<div data-slot="bash-result"><pre data-slot="bash-pre"><code>active</code></pre></div>' +
+        '</div><div data-slot="bash-outcome">Command exited with code 0</div>' +
+        '</div></div></div>');
     });
 
     document.getElementById('add-question').addEventListener('click', function () {
