@@ -1,10 +1,10 @@
 # TASKS
 
-Status: 2026-11-16
+Status: 2026-11-21
 
 ## Open
 
-- Live screen-reader verification in OpenCode 2 (2.3.0): ordering, read-once,
+- Live screen-reader verification in OpenCode 2 (2.3.2): ordering, read-once,
   heartbeat, result interrupt, focus order, question/permission docks and the
   new `bash-output` shell rows. The fixture passes; real-DOM pass still pending.
 - Verify `patch_desktop.sh` on macOS and `patch_desktop.ps1` on Windows against
@@ -18,6 +18,18 @@ Status: 2026-11-16
   OpenCode 2 instance with basic auth.
 
 ## Done
+
+- 2026-11-21 OpenCode 2.3.2 probe: no script change needed, stays 0.2.2.
+  Served bundles of 2.3.0 (running instance) and 2.3.2 (release tarball) were
+  crawled and compared anchor by anchor: every `SEL` entry and every
+  close-button slot is still present. Only the shell row changed
+  (`bash-outcome`, `bash-toggle`, `bash-toggle-button`, `bash-actions`,
+  `data-clamp` removed, `bash-copy` with its own `aria-label` added); the
+  script never used those. Exit codes no longer appear in the shell row, so
+  the outcome line is no longer read - upstream moved it to the session
+  activity label. New slots `menu-scroll-thumb`, `question-custom-toggle`,
+  `session-review-*`, `session-todo-row`, `user-message-fold*` are unused.
+  Details: docs/dom-notes.md. Rollout: all five instances on 2.3.2.
 
 - 2026-11-16 0.2.2: OpenCode 2.3.0 support. 2.3.0 renders shell output in a
   dedicated `[data-component="bash-output"]` component (`shell-tool` >

@@ -1,6 +1,6 @@
 # DOM notes
 
-Pinned to opencode web UI 2.3.0 (OpenCode 2, SolidJS). Selectors are read
+Pinned to opencode web UI 2.3.2 (OpenCode 2, SolidJS). Selectors are read
 from the served bundles and from the source at
 `github.com/anomalyco/opencode` (branch `dev`, packages/session-ui,
 packages/app). The UI is a SolidJS SPA; hashed asset names change per release,
@@ -13,6 +13,18 @@ exists. New in 2.3.0 are `[data-component="bash-output"]` (shell output, see
 `session-free-limit` and `bash-*` slots. Removed in 2.3.0 (unused by the
 script): `attachment-card-icon`, `menu-scroll-viewport`, `menu-v2-item`,
 `tooltip-v2-trigger`, `composer-editor`.
+
+Verified against 2.3.2 (2026-11-21): every anchor used by the script is
+unchanged, so 0.2.2 stays as is. Probed on the served bundles of both 2.3.0
+and 2.3.2. Shell row changes: the wrapper lost `data-clamp`, and
+`bash-outcome`, `bash-toggle`, `bash-toggle-button` and `bash-actions` are
+gone; `bash-scroll` (still `role="region" tabindex="0"`, now with
+`aria-label`), `bash-command`, `bash-pre`, `bash-result` and the new
+`bash-copy` button (own `aria-label`) remain. The exit code is no longer part
+of the shell row, only of the session activity label
+(`session.activity.shell.exitCode`). New in 2.3.2 (unused by the script):
+`menu-scroll-thumb`, `question-custom-toggle`, `session-review-*`,
+`session-todo-row`, `user-message-fold*`.
 
 ## OpenCode 1 vs 2
 
@@ -95,10 +107,12 @@ Selectors the script relies on (v2): `[data-slot="session-turn-thinking-row"]`,
 - Output: `[data-component="tool-output"]` (already `role="region" tabindex="0"`)
 - Bash output (since 2.3.0): `[data-component="bash-output"]` with
   `data-variant="shell"`, inner `[data-slot="bash-scroll"]` (already
-  `role="region" tabindex="0"`), `[data-slot="bash-command"]`,
-  `[data-slot="bash-result"]`, `[data-slot="bash-pre"]`,
-  `[data-slot="bash-outcome"]` (e.g. "Command exited with code 0"),
-  `[data-slot="bash-toggle"]`. Shell output no longer renders inside
+  `role="region" tabindex="0"`, since 2.3.2 with `aria-label`),
+  `[data-slot="bash-command"]`, `[data-slot="bash-result"]`,
+  `[data-slot="bash-pre"]`, `[data-slot="bash-copy"]` (own `aria-label`).
+  Since 2.3.2 there is no `bash-outcome` / `bash-toggle` / `bash-actions` and
+  no `data-clamp`; the exit code only shows in the session activity label.
+  Shell output no longer renders inside
   `tool-output`; the wrapper chain is `[data-component="shell-tool"]` >
   `[data-component="session-shell-message"]` > `bash-output`. The command
   itself is text-reveal content in the trigger, not a

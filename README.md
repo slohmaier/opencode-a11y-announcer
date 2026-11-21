@@ -4,8 +4,9 @@ Tampermonkey userscript that makes the opencode web UI usable with a screen
 reader: it labels controls, makes chat elements reachable by keyboard, and
 announces streamed activity in a controlled order.
 
-Target version: opencode 2.3.0 (OpenCode 2 web UI, SolidJS). OpenCode 1
-(1.18.x/1.19.x) is still supported by the same build.
+Target version: opencode 2.3.2 (OpenCode 2 web UI, SolidJS). OpenCode 1
+(1.18.x/1.19.x) is still supported by the same build. 2.3.2 needed no selector
+change; see TASKS.md and docs/dom-notes.md.
 
 ## Features
 
